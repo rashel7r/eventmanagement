@@ -21,4 +21,4 @@ A web application for managing musical events, built with React, Node.js, Expres
  - The user can edit or delete their event.
  - If user clicks on "Edit" button they can make the changes and click on "Update Event" button to see the updated event.
  - If user clicks on "Delete" button they can delete the event.
- - 
+  
