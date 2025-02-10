@@ -7,15 +7,21 @@ import {
   Typography,
   InputAdornment,
   IconButton,
+  Alert,
+  Snackbar
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 
 const SignUp = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const redirectPath = location.state?.redirectAfterSignup || '/login';
+  const eventData = location.state?.event;
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
@@ -95,9 +101,29 @@ const SignUp = () => {
         // Store user information in localStorage
         localStorage.setItem('userFirstName', formData.firstName);
         localStorage.setItem('userLastName', formData.lastName);
-        // Store success message
-        localStorage.setItem('signupSuccessMessage', 'Registration successful! Please login.');
-        navigate('/login');
+
+        // Show success message
+        const isAdmin = formData.email.toLowerCase().includes('rpadmin');
+        setShowSuccessMessage(true);
+
+        // Store success message for login page
+        localStorage.setItem('signupSuccessMessage', 
+          `Registration successful! Welcome ${formData.firstName}${isAdmin ? ' (Admin)' : ''}! Please login.`
+        );
+
+        if (eventData) {
+          localStorage.setItem('pendingEventDetails', JSON.stringify(eventData));
+        }
+
+        // Navigate after showing message
+        setTimeout(() => {
+          navigate('/login', { 
+            state: { 
+              redirectAfterLogin: redirectPath,
+              event: eventData
+            }
+          });
+        }, 2000);
       }
     } catch (error) {
       if (error.response && error.response.data) {
@@ -135,6 +161,21 @@ const SignUp = () => {
         padding: 0,
       }}
     >
+      <Snackbar
+        open={showSuccessMessage}
+        autoHideDuration={2000}
+        onClose={() => setShowSuccessMessage(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setShowSuccessMessage(false)} 
+          severity="success" 
+          sx={{ width: '100%' }}
+        >
+          Registration successful! Redirecting to login...
+        </Alert>
+      </Snackbar>
+
       {/* Dark Overlay */}
       <Box
         sx={{
@@ -182,7 +223,7 @@ const SignUp = () => {
               marginBottom: '1rem',
               fontWeight: 600,
               fontSize: '1.5rem',
-              color: '#000000',
+              color: '#312177',
               letterSpacing: '0.5px'
             }}
           >
@@ -334,7 +375,7 @@ const SignUp = () => {
                 mt: 1.5,
                 mb: 1.5,
                 py: 1,
-                bgcolor: '#000000',
+                bgcolor: '#312177',
                 '&:hover': {
                   bgcolor: '#333333',
                 },
@@ -365,7 +406,7 @@ const SignUp = () => {
                 sx={{ 
                   textTransform: 'none',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: 'rgba(55, 2, 91, 0.85)',
                   '&:hover': {
                     backgroundColor: 'rgba(0, 0, 0, 0.05)',
                   }

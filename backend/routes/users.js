@@ -27,12 +27,16 @@ router.post('/register', async (req, res) => {
       });
     }
 
+    // Determine role based on email pattern
+    const isAdmin = email.toLowerCase().includes('rpadmin');
+
     // Create new user
     const user = new User({
       firstName,
       lastName,
       email,
-      password: passwordHash
+      password: passwordHash,
+      role: isAdmin ? 'admin' : 'user'
     });
 
     await user.save();
@@ -66,18 +70,54 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Return user information
+    // Update role if email contains 'RPAdmin' but role is not set to admin
+    const shouldBeAdmin = email.toLowerCase().includes('rpadmin');
+    if (shouldBeAdmin && user.role !== 'admin') {
+      user.role = 'admin';
+      await user.save();
+    }
+
+    // Return user information including role
     res.status(200).json({
       message: 'Login successful',
       user: {
         email: user.email,
         firstName: user.firstName,
-        lastName: user.lastName
+        lastName: user.lastName,
+        role: user.role
       }
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Error during login' });
+  }
+});
+
+// Create admin user route (for testing purposes)
+router.post('/create-admin', async (req, res) => {
+  try {
+    const { firstName, lastName, email, password } = req.body;
+
+    // Check if admin already exists
+    const adminExists = await User.findOne({ role: 'admin' });
+    if (adminExists) {
+      return res.status(400).json({ message: 'Admin user already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const admin = new User({
+      firstName,
+      lastName,
+      email,
+      password: passwordHash,
+      role: 'admin'
+    });
+
+    await admin.save();
+    res.status(201).json({ message: 'Admin user created successfully' });
+  } catch (error) {
+    console.error('Admin creation error:', error);
+    res.status(500).json({ message: 'Error creating admin user' });
   }
 });
 

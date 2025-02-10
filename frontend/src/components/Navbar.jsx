@@ -6,9 +6,12 @@ import AddCircleIcon from '@mui/icons-material/AddCircle';
 import LoginIcon from '@mui/icons-material/Login';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
-const Navbar = ({ isLoggedIn, userEmail }) => {
+
+const Navbar = ({ isLoggedIn, userEmail, isAdmin }) => {
   const navigate = useNavigate();
   
+  console.log('Navbar rendered with props:', { isLoggedIn, userEmail, isAdmin });
+
   console.log("Navbar rendered without search bar");
 
   return (
@@ -66,6 +69,7 @@ const Navbar = ({ isLoggedIn, userEmail }) => {
             ml: 'auto',
             pr: { xs: 1, sm: 2 }
           }}>
+            {/* Home Button - Always visible */}
             <Button 
               color="inherit" 
               component={RouterLink} 
@@ -82,22 +86,29 @@ const Navbar = ({ isLoggedIn, userEmail }) => {
             >
               Home
             </Button>
-            <Button 
-              color="inherit" 
-              component={RouterLink} 
-              to="/create"
-              startIcon={<AddCircleIcon />}
-              sx={{ 
-                fontSize: { xs: '0.9rem', sm: '1rem' },
-                textTransform: 'none',
-                color: '#ffffff',
-                '&:hover': {
-                  bgcolor: 'rgba(255, 255, 255, 0.1)'
-                }
-              }}
-            >
-              Create Event
-            </Button>
+
+            {/* Create Event Button - Only visible for admin */}
+            {isAdmin && console.log('Admin check in Navbar passed')}
+            {isAdmin && (
+              <Button 
+                color="inherit" 
+                component={RouterLink} 
+                to="/create"
+                startIcon={<AddCircleIcon />}
+                sx={{ 
+                  fontSize: { xs: '0.9rem', sm: '1rem' },
+                  textTransform: 'none',
+                  color: '#ffffff',
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.1)'
+                  }
+                }}
+              >
+                Create Event
+              </Button>
+            )}
+            
+            {/* Profile/Login Button */}
             {isLoggedIn ? (
               <Button
                 color="inherit"
@@ -110,11 +121,10 @@ const Navbar = ({ isLoggedIn, userEmail }) => {
                   color: '#ffffff',
                   '&:hover': {
                     bgcolor: 'rgba(255, 255, 255, 0.1)'
-                  },
-                  ml: 'auto'
+                  }
                 }}
               >
-                {userEmail}
+                {userEmail} {isAdmin && '(Admin)'}
               </Button>
             ) : (
               <Button 

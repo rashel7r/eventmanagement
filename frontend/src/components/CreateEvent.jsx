@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Container,
   Typography,
@@ -14,8 +14,12 @@ import axios from 'axios';
 
 const CreateEvent = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [currentImage, setCurrentImage] = useState(0);
   const [errors, setErrors] = useState({});
+  const isEditing = location.state?.isEditing || false;
+  const eventToEdit = location.state?.event || null;
+
   const images = [
     '/images/drums.jpg',
     '/images/guitars.jpg'
@@ -30,16 +34,17 @@ const CreateEvent = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Initialize form data with event data if editing
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    date: '',
-    time: '',
-    venue: '',
-    artist: '',
-    ticketPrice: '',
-    capacity: '',
-    genre: '',
+    title: eventToEdit?.title || '',
+    description: eventToEdit?.description || '',
+    date: eventToEdit?.date ? new Date(eventToEdit.date).toISOString().split('T')[0] : '',
+    time: eventToEdit?.time || '',
+    venue: eventToEdit?.venue || '',
+    artist: eventToEdit?.artist || '',
+    ticketPrice: eventToEdit?.ticketPrice || '',
+    capacity: eventToEdit?.capacity || '',
+    genre: eventToEdit?.genre || '',
   });
 
   const validateField = (name, value) => {
@@ -171,14 +176,40 @@ const CreateEvent = () => {
         ticketPrice: parseFloat(formData.ticketPrice) || 0,
         capacity: parseInt(formData.capacity)
       };
-      const response = await axios.post('http://localhost:5000/api/events', eventData);
-      
-      if (response.status === 201) {
-        navigate('/', { state: { eventCreated: true }});
+
+      let response;
+      if (isEditing) {
+        // Update existing event
+        response = await axios.put(`http://localhost:5000/api/events/${eventToEdit._id}`, eventData);
+        if (response.status === 200) {
+          alert('Event updated successfully!');
+        }
+      } else {
+        // Create new event
+        response = await axios.post('http://localhost:5000/api/events', eventData);
+        if (response.status === 201) {
+          alert('Event created successfully!');
+        }
       }
+
+      // Reset form data
+      setFormData({
+        title: '',
+        description: '',
+        date: '',
+        time: '',
+        venue: '',
+        artist: '',
+        ticketPrice: '',
+        capacity: '',
+        genre: '',
+      });
+
+      // Navigate to homepage
+      navigate('/', { replace: true });
     } catch (error) {
-      console.error('Error creating event:', error);
-      alert(error.response?.data?.message || 'Error creating event. Please try again.');
+      console.error('Error saving event:', error);
+      alert(error.response?.data?.message || 'Error saving event. Please try again.');
     }
   };
 
@@ -255,9 +286,9 @@ const CreateEvent = () => {
             component="h1" 
             gutterBottom 
             align="center"
-            sx={{ mb: 1.5, fontWeight: 600 }}  // Reduced from mb: 2
+            sx={{ mb: 1.5, fontWeight: 600, color: '#312177' }}  // Reduced from mb: 2
           >
-            Create New Event
+            {isEditing ? 'Update Event' : 'Create New Event'}
           </Typography>
           <form onSubmit={handleSubmit}>
             <Grid container spacing={2}>
@@ -404,14 +435,14 @@ const CreateEvent = () => {
                       py: 0.75,  // Reduced from py: 1
                       px: 8,
                       width: '300px',
-                      bgcolor: 'black',
+                      bgcolor: '#312177',
                       color: 'white',
                       '&:hover': {
                         bgcolor: '#333333'
                       }
                     }}
                   >
-                    Create Event
+                    {isEditing ? 'Update Event' : 'Create Event'}
                   </Button>
                 </Box>
               </Grid>

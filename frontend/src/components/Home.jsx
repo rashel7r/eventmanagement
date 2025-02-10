@@ -36,14 +36,16 @@ const images = [
   }
 ];
 
-const Home = () => {
+const Home = ({ isLoggedIn, isAdmin }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [currentImage, setCurrentImage] = useState(0);
   const [events, setEvents] = useState([]);
   const [filteredEvents, setFilteredEvents] = useState([]);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // Check for event creation success
   useEffect(() => {
@@ -107,6 +109,50 @@ const Home = () => {
   useEffect(() => {
     filterEvents(searchQuery);
   }, [searchQuery, events]);
+
+  const handleBookEvent = (event) => {
+    if (isAdmin) {
+      navigate('/profile');
+    } else if (!isLoggedIn) {
+      navigate('/signup', { 
+        state: { 
+          redirectAfterSignup: '/event-details',
+          event: event
+        }
+      });
+    } else {
+      navigate('/event-details', { state: { event } });
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    navigate('/create', { state: { event } });
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (window.confirm('Are you sure you want to delete this event?')) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+
+        if (response.ok) {
+          // Remove the deleted event from the events list
+          setEvents(events.filter(event => event._id !== eventId));
+          setFilteredEvents(filteredEvents.filter(event => event._id !== eventId));
+          alert('Event deleted successfully');
+        } else {
+          throw new Error('Failed to delete event');
+        }
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        alert('Failed to delete event. Please try again.');
+      }
+    }
+  };
 
   return (
     <Box sx={{ minHeight: '100vh' }}>
@@ -393,7 +439,7 @@ const Home = () => {
                   alt={event.title}
                   sx={{ objectFit: 'cover' }}
                 />
-                <CardContent sx={{ flexGrow: 1, p: 2.5 }}>
+                <CardContent sx={{ flexGrow: 1, p: 2.5, pb: 1.5 }}>
                   <Typography 
                     gutterBottom 
                     variant="h5" 
@@ -401,7 +447,9 @@ const Home = () => {
                     sx={{ 
                       fontSize: { xs: '1.25rem', md: '1.5rem' },
                       fontWeight: 600,
-                      mb: 1.5
+                      mb: 1.5,
+                      color: '#312177',
+                      textAlign: 'center'
                     }}
                   >
                     {event.title}
@@ -425,41 +473,28 @@ const Home = () => {
                     </Typography>
                   </Box>
                 </CardContent>
-                <CardActions sx={{ 
-                  justifyContent: 'center', 
-                  gap: 2,
-                  p: 2,
-                  pt: 0
-                }}>
-                  <Button
-                    size="small"
-                    onClick={() => navigate(`/edit/${event._id}`)}
+                <CardActions 
+                  sx={{ 
+                    justifyContent: 'center', 
+                    pb: 2, 
+                    pt: 0.5
+                  }}
+                >
+                  <Button 
+                    variant="contained"
+                    size="large"
                     sx={{ 
-                      bgcolor: 'black',
+                      bgcolor: '#312177',
                       color: 'white',
-                      minWidth: '80px',
-                      py: 0.5,
+                      px: 4,
+                      py: 1,
                       '&:hover': {
                         bgcolor: '#333333'
                       }
                     }}
+                    onClick={() => handleBookEvent(event)}
                   >
-                    Edit
-                  </Button>
-                  <Button
-                    size="small"
-                    onClick={() => handleDelete(event._id)}
-                    sx={{
-                      bgcolor: 'red',
-                      color: 'white',
-                      minWidth: '80px',
-                      py: 0.5,
-                      '&:hover': {
-                        bgcolor: '#d32f2f'
-                      }
-                    }}
-                  >
-                    Delete
+                    {isAdmin ? 'View Event' : isLoggedIn ? 'Book Event' : 'Sign Up to Book'}
                   </Button>
                 </CardActions>
               </Card>

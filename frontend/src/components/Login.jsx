@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
   Box,
-  Container,
   Paper,
   TextField,
   Button,
@@ -9,7 +8,7 @@ import {
   InputAdornment,
   IconButton,
   Alert,
-  Snackbar,
+  Snackbar
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -19,62 +18,23 @@ const Login = ({ onLogin }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [showPassword, setShowPassword] = useState(false);
-  const [emailError, setEmailError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
-
+  const [successMessage, setSuccessMessage] = useState('');
   const [formData, setFormData] = useState({
     email: '',
-    password: '',
+    password: ''
   });
+  const [errors, setErrors] = useState({});
 
-  // Check for success message in localStorage when component mounts
+  // Check for signup success message
   useEffect(() => {
-    const message = localStorage.getItem('signupSuccessMessage');
-    if (message) {
-      setSuccessMessage(message);
+    const signupMessage = localStorage.getItem('signupSuccessMessage');
+    if (signupMessage) {
+      setSuccessMessage(signupMessage);
       setShowSuccessMessage(true);
-      // Remove the message from localStorage after retrieving it
       localStorage.removeItem('signupSuccessMessage');
     }
   }, []);
-
-  const validateEmail = (email) => {
-    if (!email) {
-      return 'Email is required';
-    }
-    if (!email.includes('@')) {
-      return 'Email must contain "@" symbol';
-    }
-    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
-    if (!emailRegex.test(email)) {
-      return 'Please enter a valid email address';
-    }
-    return '';
-  };
-
-  const validatePassword = (password) => {
-    if (!password) {
-      return 'Password is required';
-    }
-    if (password.length < 8) {
-      return 'Password must be at least 8 characters long';
-    }
-    if (!/[A-Z]/.test(password)) {
-      return 'Password must contain at least one uppercase letter';
-    }
-    if (!/[a-z]/.test(password)) {
-      return 'Password must contain at least one lowercase letter';
-    }
-    if (!/[0-9]/.test(password)) {
-      return 'Password must contain at least one number';
-    }
-    if (!/[!@#$%^&*]/.test(password)) {
-      return 'Password must contain at least one special character (!@#$%^&*)';
-    }
-    return '';
-  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -82,65 +42,66 @@ const Login = ({ onLogin }) => {
       ...prev,
       [name]: value
     }));
-    
-    // Clear errors when user starts typing
-    if (name === 'email') {
-      setEmailError('');
-    }
-    if (name === 'password') {
-      setPasswordError('');
-    }
+    // Clear error when user starts typing
+    setErrors(prev => ({
+      ...prev,
+      [name]: ''
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Validate both email and password
-    const emailValidationError = validateEmail(formData.email);
-    const passwordValidationError = validatePassword(formData.password);
-
-    setEmailError(emailValidationError);
-    setPasswordError(passwordValidationError);
-
-    if (emailValidationError || passwordValidationError) {
-      return;
-    }
-
     try {
-      // Make API call to login
       const response = await axios.post('http://localhost:5000/api/users/login', {
         email: formData.email,
         password: formData.password
       });
-
+  
       if (response.status === 200) {
         const { user } = response.data;
-        
+  
         // Store user information in localStorage
         localStorage.setItem('userEmail', user.email);
         localStorage.setItem('userFirstName', user.firstName);
         localStorage.setItem('userLastName', user.lastName);
-        
-        // Call the onLogin prop with the email
-        onLogin(user.email);
-        
-        // Navigate to home page
-        navigate('/', { state: { loginSuccess: true }});
+        localStorage.setItem('userRole', user.role);
+  
+        // Call the onLogin prop
+        onLogin(user.email, user.role);
+  
+        // ✅ Show success message
+        setSuccessMessage(`Welcome ${user.firstName}! Login successful${user.role === 'admin' ? ' (Admin)' : ''}`);
+        setShowSuccessMessage(true);
+
+        // ✅ Wait before navigating (Allow Snackbar to appear)
+        setTimeout(() => {
+          navigate('/', { 
+            state: { 
+              loginSuccess: true,
+              redirectAfterLogin: location.state?.redirectAfterLogin,
+              event: location.state?.event
+            }
+          });
+        }, 2500);  // Adjust the delay if necessary
       }
     } catch (error) {
+      console.error('Login error:', error);
       if (error.response && error.response.data) {
         const { field, message } = error.response.data;
-        if (field === 'email') {
-          setEmailError(message);
-        } else if (field === 'password') {
-          setPasswordError(message);
-        }
+        setErrors(prev => ({
+          ...prev,
+          [field]: message
+        }));
       } else {
-        console.error('Login error:', error);
-        setEmailError('Error during login. Please try again.');
+        setErrors(prev => ({
+          ...prev,
+          submit: 'Login failed. Please try again.'
+        }));
       }
     }
   };
+  
 
   return (
     <Box
@@ -163,14 +124,25 @@ const Login = ({ onLogin }) => {
     >
       <Snackbar
         open={showSuccessMessage}
-        autoHideDuration={6000}
+        autoHideDuration={2500}  // Make sure this matches the setTimeout duration
         onClose={() => setShowSuccessMessage(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        sx={{ mt: 6, zIndex: 9999 }}
       >
         <Alert 
           onClose={() => setShowSuccessMessage(false)} 
           severity="success"
-          sx={{ width: '100%' }}
+          elevation={6}
+          variant="filled"
+          sx={{ 
+            width: '100%',
+            minWidth: '300px',
+            fontSize: '1.1rem',
+            bgcolor: '#4caf50',
+            '& .MuiAlert-icon': {
+              fontSize: '2rem'
+            }
+          }}
         >
           {successMessage}
         </Alert>
@@ -194,7 +166,7 @@ const Login = ({ onLogin }) => {
         sx={{
           position: 'relative',
           width: '100%',
-          maxWidth: '500px',
+          maxWidth: '400px',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
@@ -212,10 +184,6 @@ const Login = ({ onLogin }) => {
             backdropFilter: 'blur(10px)',
             borderRadius: '16px',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
-            transition: 'all 0.3s ease-in-out',
-            '&:hover': {
-              boxShadow: '0 12px 40px rgba(0, 0, 0, 0.25)',
-            }
           }}
         >
           <Typography
@@ -224,129 +192,91 @@ const Login = ({ onLogin }) => {
             align="center"
             gutterBottom
             sx={{ 
-              marginBottom: '1rem',
+              marginBottom: '1.5rem',
               fontWeight: 600,
-              fontSize: '1.5rem',
-              color: '#000000',
+              fontSize: '1.75rem',
+              color: '#312177',
               letterSpacing: '0.5px'
             }}
           >
-            Event Login Form
+            Rhythm Planner Login
           </Typography>
+
           <form onSubmit={handleSubmit} style={{ width: '100%' }}>
-            <Box sx={{ mb: 1.5 }}>
-              <Typography
-                component="label"
-                sx={{
-                  display: 'block',
-                  mb: 0.5,
-                  fontWeight: 500,
-                  color: 'text.secondary'
-                }}
-              >
-                Email
-              </Typography>
+            <Box sx={{ mb: 2 }}>
               <TextField
                 fullWidth
+                label="Email"
                 name="email"
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
+                error={!!errors.email}
+                helperText={errors.email}
                 required
-                error={!!emailError}
-                helperText={emailError}
-                onBlur={() => {
-                  const error = validateEmail(formData.email);
-                  setEmailError(error);
-                }}
-                placeholder="Enter your email"
                 sx={{ 
+                  mb: 2,
                   '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '& fieldset': {
-                      borderRadius: '8px'
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    transition: 'background-color 0.3s ease',
+                    '&:hover, &.Mui-focused': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
                     }
                   }
                 }}
-                inputProps={{
-                  'aria-label': 'Email address',
-                  autoComplete: 'email'
-                }}
               />
-            </Box>
-            <Box sx={{ mb: 2 }}>
-              <Typography
-                component="label"
-                sx={{
-                  display: 'block',
-                  mb: 0.5,
-                  fontWeight: 500,
-                  color: 'text.secondary'
-                }}
-              >
-                Password
-              </Typography>
               <TextField
                 fullWidth
+                label="Password"
                 name="password"
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
                 required
-                error={!!passwordError}
-                helperText={passwordError}
-                onBlur={() => {
-                  const error = validatePassword(formData.password);
-                  setPasswordError(error);
-                }}
-                placeholder="Enter your password"
-                sx={{ 
-                  '& .MuiOutlinedInput-root': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
-                    },
-                    '& fieldset': {
-                      borderRadius: '8px'
-                    }
-                  }
-                }}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
                       <IconButton
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
-                        aria-label={showPassword ? 'Hide password' : 'Show password'}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
                     </InputAdornment>
                   ),
                 }}
-                inputProps={{
-                  'aria-label': 'Password',
-                  autoComplete: 'current-password'
+                sx={{ 
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+                    transition: 'background-color 0.3s ease',
+                    '&:hover, &.Mui-focused': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    }
+                  }
                 }}
               />
             </Box>
+
+            {errors.submit && (
+              <Typography color="error" variant="body2" align="center" sx={{ mb: 2 }}>
+                {errors.submit}
+              </Typography>
+            )}
+
             <Button
               type="submit"
               variant="contained"
               fullWidth
-              size="large"
               sx={{
-                mt: 1,
-                mb: 1.5,
-                py: 1.25,
-                bgcolor: '#000000',
+                mt: 2,
+                mb: 2,
+                py: 1.5,
+                bgcolor: '#312177',
                 '&:hover': {
                   bgcolor: '#333333',
                 },
-                transition: 'background-color 0.3s ease',
                 textTransform: 'none',
                 fontSize: '1rem',
                 fontWeight: 500,
@@ -355,11 +285,11 @@ const Login = ({ onLogin }) => {
             >
               Login
             </Button>
+
             <Typography
               variant="body2"
               align="center"
               sx={{ 
-                mt: 2, 
                 color: 'text.secondary',
                 display: 'flex',
                 alignItems: 'center',
@@ -374,13 +304,13 @@ const Login = ({ onLogin }) => {
                 sx={{ 
                   textTransform: 'none',
                   fontWeight: 500,
-                  color: '#000000',
+                  color: 'rgba(55, 2, 91, 0.85)',
                   '&:hover': {
                     backgroundColor: 'rgba(0, 0, 0, 0.05)',
                   }
                 }}
               >
-                Sign up
+                Sign Up
               </Button>
             </Typography>
           </form>
@@ -390,4 +320,4 @@ const Login = ({ onLogin }) => {
   );
 };
 
-export default Login; 
+export default Login;
