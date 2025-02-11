@@ -11,18 +11,23 @@ A web application for managing musical events, built with React, Node.js, Expres
 
  # Instructions
 
- - The user can click on "Login" tab on the navigation bar and go to "Sign up" if they do not have a registered account, enter form credentials and click "Register" to create the account. (Note: Avoid entering the 
-   same email address again on Sign up if you have already created an account, just login instead)
- - If the user already has a registered account feel free to just login instead by entering the login form credentials. (Note: Make sure to enter credentials that match the given credentials on Sign up page)
- - The user should be able to see their user profile with their profile picture, first name, last name and email address after successful login. (Note: User can change their profile picture, by clicking on the 
-   profile picture button below the profile icon)
- - The user can create a new event by clicking on "Create Event" tab on the navigation bar which will navigate them to "Create Event Page".
- - After filling-up the form credentials the user can see their created event displayed on the "Home Page".
- - The user can search the event on the search bar provided by entering the title of the event, relevant event will be displayed.
- - If no such events exist, a message that says "No Events Found" will be displayed.
- - The user can edit or delete their event.
- - If user clicks on "Edit" button they can make the changes and click on "Update Event" button to see the updated event.
- - If user clicks on "Delete" button they can delete the event.
+- The user roles included in the website are : admin and client.
+- If you do not have a registered account, you will be navigated to Sign up page before performing any activity. (Note: Make sure to enter an email address that has not been used for a registered account)
+- After Signing up you will be navigated to the Login page which will navigate to the Home page after successful login. (Note: Make sure to enter the correct details to match your Sign up credentials)
+
+  # Admin
+- If you want to log in as an admin, if account is not registered go through Sign up first and Login next. (Note: Make sure to include this username on your email 'RPAdmin', you can add digits as well..)
+- After logging in you will be identified by the system as an admin, therefore 'Create event' tab is visible on the navbar which allows you to successfully create an event.
+- The event will then appear on Home page, to make any changes to the event click on 'View Event' button on event card, this will navigate you to your User Profile page.
+- Next click on 'More Details' button on the user profile to see the list of created events, here you can delete the event and edit as well, if you require to edit you will be navigated to the Update Event page.
+  
+ # User (Registered / Not Registered)
+- If you wan to log in as a user, if account is not registered you can only view the Home page, but if you want to book an event you will be navigated to Sign up page.
+- If you want to book an event and you're a registered user when you click on 'Book Event' button you will be navigated to the Event Details page which will show you the details of the event created by admin.
+- When user click on 'Book Now' button they will be navigated to the Book Event page. (Note: Fill all fields with information, special requirements is considered optional)
+- After clicking on the button 'Confirm Booking' the user can visit the User Profile page and click on 'More Details' button to view the list of bookings.
+- The user can edit their bookings if required, then they will be navigated to the Update Booking page and added changes will be visible in the bookings list.
+  
    
    
   
